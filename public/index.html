@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Chat</title>
+    <style>
+        #chat {
+            height: 400px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <input id="username" placeholder="Enter your username" />
+        <button onclick="connect()">Join Chat</button>
+    </div>
+    <div id="chat"></div>
+    <input id="messageInput" placeholder="Enter message" />
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        let ws;
+        let username = '';
+
+        function connect() {
+            username = document.getElementById('username').value;
+            if (!username) {
+                alert('Please enter a username.');
+                return;
+            }
+            ws = new WebSocket(`ws://${window.location.host}`);
+
+            ws.onmessage = (event) => {
+                const { type, data } = JSON.parse(event.data);
+                if (type === 'history') {
+                    data.forEach(showMessage);
+                } else if (type === 'message') {
+                    showMessage(data);
+                }
+            };
+
+            ws.onopen = () => console.log('Connected to the server');
+            ws.onclose = () => console.log('Disconnected from the server');
+        }
+
+        function sendMessage() {
+            const content = document.getElementById('messageInput').value;
+            if (content && ws) {
+                const message = {
+                    type: 'message',
+                    sender: username,
+                    content,
+                };
+                ws.send(JSON.stringify(message));
+                document.getElementById('messageInput').value = '';
+            }
+        }
+
+        function showMessage(message) {
+            const chat = document.getElementById('chat');
+            const messageElement = document.createElement('div');
+            messageElement.textContent = `${message.sender}: ${message.content}`;
+            chat.appendChild(messageElement);
+            chat.scrollTop = chat.scrollHeight;
+        }
+    </script>
+</body>
+</html>
